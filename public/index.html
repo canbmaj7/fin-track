@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Harcama Ekle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#121212',
+                        cardbg: '#1E1E1E',
+                        primary: '#BB86FC',
+                        accent: '#03DAC6',
+                        error: '#CF6679'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Modern mobil input stilleri */
+        input,
+        select,
+        textarea {
+            font-size: 16px !important;
+            /* iOS zoom engelleme */
+        }
+    </style>
+</head>
+
+<body
+    class="bg-darkbg text-gray-200 min-h-screen flex flex-col items-center p-4 selection:bg-primary selection:text-black">
+
+    <div class="w-full max-w-md w-full bg-cardbg rounded-2xl shadow-xl overflow-hidden mt-4">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-center text-primary mb-6">İşlem Ekle</h1>
+
+            <form id="budgetForm" class="space-y-5">
+
+                <!-- Tutar -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Tutar</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-xl text-gray-400">₺</span>
+                        <input type="number" id="amount" step="0.01" inputmode="decimal" placeholder="0.00" required
+                            class="w-full bg-darkbg text-white text-3xl font-bold pl-10 pr-4 py-4 rounded-xl border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder-gray-600">
+                    </div>
+                </div>
+
+                <!-- Tür (Gelir/Gider) -->
+                <div class="flex bg-darkbg rounded-xl p-1 border border-gray-700">
+                    <button type="button" id="btnExpense"
+                        class="flex-1 py-2 rounded-lg text-sm font-medium transition-all bg-error text-black shadow-lg"
+                        onclick="setType('Gider')">
+                        Gider
+                    </button>
+                    <button type="button" id="btnIncome"
+                        class="flex-1 py-2 rounded-lg text-sm font-medium text-gray-400 transition-all hover:text-white"
+                        onclick="setType('Gelir')">
+                        Gelir
+                    </button>
+                </div>
+                <input type="hidden" id="type" value="Gider">
+
+                <!-- Kategori -->
+                <div>
+                    <label
+                        class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Kategori</label>
+                    <select id="category" required
+                        class="w-full bg-darkbg text-white text-lg px-4 py-3 rounded-xl border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none">
+                        <option value="" disabled selected>Yükleniyor...</option>
+                    </select>
+                </div>
+
+                <!-- Açıklama -->
+                <div>
+                    <label
+                        class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Açıklama</label>
+                    <input type="text" id="description" placeholder="Ne aldın?"
+                        class="w-full bg-darkbg text-white text-lg px-4 py-3 rounded-xl border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                </div>
+
+                <!-- Tarih -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Tarih</label>
+                    <input type="date" id="date"
+                        class="w-full bg-darkbg text-white text-lg px-4 py-3 rounded-xl border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="submitBtn"
+                    class="w-full bg-primary hover:bg-opacity-90 text-black font-bold text-lg py-4 rounded-xl shadow-lg transform active:scale-95 transition-all mt-4">
+                    Kaydet
+                </button>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 opacity-0 pointer-events-none transition-opacity duration-300 z-50 whitespace-nowrap">
+        <span id="toastIcon">✅</span>
+        <span id="toastMessage">Kaydedildi!</span>
+    </div>
+
+    <script>
+        // Tarihi bugüne ayarla
+        document.getElementById('date').valueAsDate = new Date();
+
+        let allCategories = { expense: [], income: [] };
+
+        // Tür Seçimi Mantığı
+        function setType(type) {
+            document.getElementById('type').value = type;
+            const btnExpense = document.getElementById('btnExpense');
+            const btnIncome = document.getElementById('btnIncome');
+
+            if (type === 'Gider') {
+                btnExpense.className = 'flex-1 py-2 rounded-lg text-sm font-medium transition-all bg-error text-black shadow-lg';
+                btnIncome.className = 'flex-1 py-2 rounded-lg text-sm font-medium text-gray-400 transition-all hover:text-white';
+                updateCategoryDropdown('expense');
+            } else {
+                btnExpense.className = 'flex-1 py-2 rounded-lg text-sm font-medium text-gray-400 transition-all hover:text-white';
+                btnIncome.className = 'flex-1 py-2 rounded-lg text-sm font-medium transition-all bg-accent text-black shadow-lg';
+                updateCategoryDropdown('income');
+            }
+        }
+
+        function updateCategoryDropdown(typeKey) {
+            const select = document.getElementById('category');
+            select.innerHTML = '<option value="" disabled selected>Seçiniz</option>';
+
+            const list = allCategories[typeKey] || [];
+
+            if (list.length === 0) {
+                const option = document.createElement('option');
+                option.disabled = true;
+                option.textContent = 'Kategori bulunamadı';
+                select.appendChild(option);
+                return;
+            }
+
+            list.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                select.appendChild(option);
+            });
+        }
+
+        // Kategorileri Çek
+        async function fetchCategories() {
+            try {
+                const res = await fetch('/api/categories');
+                if (!res.ok) throw new Error('API Hatası');
+                allCategories = await res.json();
+
+                // Varsayılan olarak Gider seçili olduğu için expense listesini yükle
+                updateCategoryDropdown('expense');
+
+            } catch (err) {
+                console.error(err);
+                const select = document.getElementById('category');
+                select.innerHTML = '<option value="" disabled>Kategoriler Yüklenemedi</option>';
+            }
+        }
+
+        fetchCategories();
+
+        // Form Gönderimi
+        document.getElementById('budgetForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const originalText = btn.textContent;
+
+            // Loading state
+            btn.disabled = true;
+            btn.textContent = 'Kaydediliyor...';
+            btn.classList.add('opacity-75');
+
+            const data = {
+                amount: document.getElementById('amount').value,
+                description: document.getElementById('description').value,
+                type: document.getElementById('type').value,
+                category: document.getElementById('category').value,
+                date: document.getElementById('date').value
+            };
+
+            try {
+                const res = await fetch('/api/transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    showToast('İşlem başarıyla kaydedildi!', 'success');
+                    // Reset form (Type ve Date hariç)
+                    document.getElementById('amount').value = '';
+                    document.getElementById('description').value = '';
+                    document.getElementById('category').value = ''; // Reset select
+                    document.getElementById('amount').focus();
+                } else {
+                    throw new Error('Kaydetme başarısız');
+                }
+            } catch (err) {
+                showToast('Hata oluştu. Tekrar deneyin.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+                btn.classList.remove('opacity-75');
+            }
+        });
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = msg;
+            document.getElementById('toastIcon').textContent = type === 'success' ? '✅' : '❌';
+
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>

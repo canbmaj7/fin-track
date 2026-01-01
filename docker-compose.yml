@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  butcesistemi:
+    build: .
+    container_name: butcesistemi
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      # Coolify'da bu değişkenleri UI üzerinden de tanımlayabilirsiniz
+      # SPREADSHEET_ID=${SPREADSHEET_ID}
+      # GOOGLE_SERVICE_ACCOUNT_EMAIL=${GOOGLE_SERVICE_ACCOUNT_EMAIL}
+    volumes:
+      # Credentials dosyasını mount etmek için (Lokal test için)
+      - ./credentials.json:/app/credentials.json
