@@ -76,7 +76,8 @@
                             <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Tutar</label>
                             <div class="relative">
                                 <span class="absolute left-4 top-1/2 -translate-y-1/2 text-xl text-gray-400">₺</span>
-                                <input type="number" id="amount" step="0.01" inputmode="decimal" placeholder="0.00" required
+                                <input type="text" id="amount" inputmode="decimal" placeholder="0.00" required
+                                    oninput="this.value = this.value.replace(/[^0-9,.]/g, '').replace(',', '.')"
                                     class="w-full bg-darkbg text-white text-3xl font-bold pl-10 pr-4 py-3 rounded-xl border border-gray-700 focus:border-primary outline-none transition-colors">
                             </div>
                         </div>
