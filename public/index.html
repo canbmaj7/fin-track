@@ -190,8 +190,6 @@
         // Startup Check
         if(appPw) {
             verifyLogin(appPw);
-        } else {
-            // Show login screen
         }
 
         async function login() {
@@ -214,22 +212,15 @@
                     localStorage.setItem('budget_pw', pw);
                     document.getElementById('loginScreen').classList.add('hidden');
                     document.getElementById('mainApp').classList.remove('hidden');
-                    initApp(); // Start loading data
+                    initApp(); 
                 } else {
                     document.getElementById('loginError').classList.remove('hidden');
-                    if(appPw) { // if token expired or changed
-                        localStorage.removeItem('budget_pw');
-                        appPw = '';
-                        document.getElementById('loginScreen').classList.remove('hidden');
-                        document.getElementById('mainApp').classList.add('hidden');
-                    }
                 }
             } catch(e) {
                 alert("Sunucuya bağlanılamadı.");
             }
         }
 
-        // --- UTILS ---
         const fetchAPI = async (url, options = {}) => {
             options.headers = {
                 ...options.headers,
@@ -237,7 +228,10 @@
                 'Content-Type': 'application/json'
             };
             const res = await fetch(url, options);
-            if(res.status === 401) verifyLogin('invalid'); // Force logout config
+            if(res.status === 401) {
+                localStorage.removeItem('budget_pw');
+                location.reload();
+            }
             if(!res.ok) throw new Error('API Hatası');
             return res.json();
         };
@@ -250,33 +244,23 @@
             setTimeout(() => toast.classList.add('opacity-0'), 3000);
         }
 
-        // --- INITIALIZATION ---
         function initApp() {
             document.getElementById('date').valueAsDate = new Date();
-            loadCategories();
-            loadDashboard(); // Load history & dashboard metrics
+            loadCategoriesAndActions();
+            loadDashboard();
         }
 
-        // --- TAB LOGIC ---
         function switchTab(tabId) {
-            // Hide all views
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.getElementById(`view-${tabId}`).classList.remove('hidden');
-
-            // Reset tab styles
             document.querySelectorAll('nav button').forEach(el => {
                 el.classList.remove('tab-active');
                 el.classList.add('tab-inactive');
             });
             document.getElementById(`tab-${tabId}`).classList.remove('tab-inactive');
             document.getElementById(`tab-${tabId}`).classList.add('tab-active');
-
-            if(tabId === 'ozet' || tabId === 'gecmis') {
-                // Refresh data when switching to these tabs if needed, but we do it initially
-            }
         }
 
-        // --- VIEW 1: EKLE ---
         function setType(type) {
             document.getElementById('type').value = type;
             const btnEx = document.getElementById('btnExpense');
@@ -303,13 +287,27 @@
             });
         }
 
-        async function loadCategories() {
+        async function loadCategoriesAndActions() {
             try {
-                allCategories = await fetchAPI('/api/categories');
-                setType('Gider'); // Varsayılan Gider
+                const data = await fetchAPI('/api/categories');
+                allCategories = data.categories;
+                renderQuickActions(data.quickActions);
+                setType('Gider');
             } catch(e) {
                 console.error(e);
             }
+        }
+
+        function renderQuickActions(actions) {
+            const container = document.querySelector('.overflow-x-auto');
+            container.innerHTML = '';
+            actions.forEach(act => {
+                const btn = document.createElement('button');
+                btn.className = 'shrink-0 bg-cardbg border border-gray-700 rounded-full px-4 py-2 text-sm flex items-center gap-1 active:scale-95 transition';
+                btn.textContent = act.label;
+                btn.onclick = () => quickAction(act.amount, act.description, act.type, act.category);
+                container.appendChild(btn);
+            });
         }
 
         function quickAction(amount, desc, type, cat) {
@@ -325,7 +323,6 @@
             const btn = document.getElementById('submitBtn');
             const originalText = btn.textContent;
             btn.disabled = true; btn.textContent = '...';
-
             const data = {
                 amount: document.getElementById('amount').value,
                 description: document.getElementById('description').value,
@@ -333,13 +330,11 @@
                 category: document.getElementById('category').value,
                 date: document.getElementById('date').value
             };
-
             try {
                 await fetchAPI('/api/transactions', { method: 'POST', body: JSON.stringify(data) });
                 showToast('Kaydedildi!', 'success');
                 document.getElementById('amount').value = '';
                 document.getElementById('description').value = '';
-                // Reload dashboard data in background
                 loadDashboard();
             } catch(e) {
                 showToast('Hata oluştu', 'error');
@@ -348,7 +343,6 @@
             }
         });
 
-        // --- VIEW 2 & 3: GEÇMİŞ & DASHBOARD ---
         async function loadDashboard() {
             try {
                 transactions = await fetchAPI('/api/transactions');
@@ -362,13 +356,14 @@
         function renderHistory() {
             const list = document.getElementById('historyList');
             list.innerHTML = '';
-            if(transactions.length === 0) {
+            // Sadece son 50 tanesini göster
+            const last50 = transactions.slice(0, 50);
+            if(last50.length === 0) {
                 list.innerHTML = '<div class="text-center text-gray-500 py-4">Kayıt yok.</div>';
                 return;
             }
-
-            transactions.forEach(t => {
-                if(!t.amount && !t.category) return; // Boş satırları atla
+            last50.forEach(t => {
+                if(!t.amount && !t.category) return;
                 const isExpense = t.type === 'Gider';
                 const el = document.createElement('div');
                 el.className = "flex items-center justify-between bg-cardbg p-3 rounded-xl border border-gray-800";
@@ -405,24 +400,33 @@
         function renderDashboard() {
             let sumIn = 0, sumEx = 0;
             const categorySums = {};
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1;
+            const currentYear = now.getFullYear();
 
             transactions.forEach(t => {
-                if(!t.amount) return;
-                const amt = parseFloat(t.amount);
-                if(t.type === 'Gider') {
-                    sumEx += amt;
-                    categorySums[t.category] = (categorySums[t.category] || 0) + amt;
-                } else {
-                    sumIn += amt;
+                if(!t.amount || !t.date) return;
+                
+                const parts = t.date.split('.');
+                const tMonth = parseInt(parts[1]);
+                const tYear = parseInt(parts[2]);
+
+                if (tMonth === currentMonth && tYear === currentYear) {
+                    const amt = parseFloat(t.amount);
+                    if(t.type === 'Gider') {
+                        sumEx += amt;
+                        categorySums[t.category] = (categorySums[t.category] || 0) + amt;
+                    } else {
+                        sumIn += amt;
+                    }
                 }
             });
 
             const net = sumIn - sumEx;
-            document.getElementById('sumIncome').textContent = sumIn.toFixed(2) + ' ₺';
-            document.getElementById('sumExpense').textContent = sumEx.toFixed(2) + ' ₺';
-            document.getElementById('sumBalance').textContent = net.toFixed(2) + ' ₺';
+            document.getElementById('sumIncome').textContent = sumIn.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+            document.getElementById('sumExpense').textContent = sumEx.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+            document.getElementById('sumBalance').textContent = net.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
             document.getElementById('sumBalance').className = `text-2xl font-bold ${net < 0 ? 'text-error' : 'text-success'}`;
-
             renderChart(categorySums);
         }
 
@@ -430,20 +434,15 @@
             const ctx = document.getElementById('expenseChart');
             const labels = Object.keys(dataObj);
             const data = Object.values(dataObj);
-
             if(chartInstance) chartInstance.destroy();
-
-            if(labels.length === 0) return; // Boşsa çizme
-
+            if(labels.length === 0) return;
             chartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: labels,
                     datasets: [{
                         data: data,
-                        backgroundColor: [
-                            '#CF6679', '#BB86FC', '#03DAC6', '#FFB74D', '#64B5F6', '#E57373', '#FFF176'
-                        ],
+                        backgroundColor: ['#CF6679', '#BB86FC', '#03DAC6', '#FFB74D', '#64B5F6', '#E57373', '#FFF176'],
                         borderWidth: 0
                     }]
                 },

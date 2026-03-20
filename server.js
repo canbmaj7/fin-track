@@ -11,7 +11,7 @@ app.use(express.static('public'));
 
 // Google Sheets Auth
 const auth = new google.auth.GoogleAuth({
-  keyFile: 'credentials.json', // Docker'da veya lokalde bu dosya olmalı
+  keyFile: 'credentials.json',
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
@@ -21,8 +21,6 @@ const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 
 // Helper: Tarih formatı (DD.MM.YYYY)
 function formatDate(dateStr) {
-  // Gelen format 2024-01-01 (HTML date input)
-  // Çıktı: 01.01.2024
   if (!dateStr) return new Date().toLocaleDateString('tr-TR');
   const [year, month, day] = dateStr.split('-');
   return `${day}.${month}.${year}`;
@@ -31,9 +29,8 @@ function formatDate(dateStr) {
 // Middleware: Auth (Basit Şifre Koruması)
 const checkAuth = (req, res, next) => {
     const appPassword = process.env.APP_PASSWORD;
-    if (!appPassword) return next(); // Eğer .env'de şifre yoksa koruma kapalıdır
+    if (!appPassword) return next();
     
-    // Auth header "Bearer <password>" veya custom header
     const providedPw = req.headers['x-app-password'];
     if (providedPw === appPassword) {
         next();
@@ -51,52 +48,59 @@ app.post('/api/login', (req, res) => {
     }
 });
 
-// API: Kategorileri Getir (Auth Gerektirir)
+// API: Kategorileri ve Hızlı Butonları Getir
 app.get('/api/categories', checkAuth, async (req, res) => {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Settings!A2:B', // A: Gider, B: Gelir
+      range: 'Settings!A2:H', // A: Gider, B: Gelir, D-H: Hızlı Butonlar
     });
 
     const rows = response.data.values || [];
 
-    // A sütunu: Gider, B sütunu: Gelir
-    const categories = {
-      expense: [],
-      income: []
-    };
+    const categories = { expense: [], income: [] };
+    const quickActions = [];
 
     rows.forEach(row => {
-      if (row[0]) categories.expense.push(row[0]); // A sütunu
-      if (row[1]) categories.income.push(row[1]);  // B sütunu
+      if (row[0]) categories.expense.push(row[0]);
+      if (row[1]) categories.income.push(row[1]);
+      
+      // Hızlı Butonlar (D: Label, E: Amt, F: Desc, G: Type, H: Cat)
+      if (row[3]) {
+        quickActions.push({
+          label: row[3],
+          amount: row[4] || 0,
+          description: row[5] || '',
+          type: row[6] || 'Gider',
+          category: row[7] || ''
+        });
+      }
     });
 
-    res.json(categories);
+    res.json({ categories, quickActions });
   } catch (error) {
-    console.error('Kategoriler çekilemedi:', error);
-    res.status(500).json({ error: 'Kategoriler alınamadı' });
+    console.error('Veriler çekilemedi:', error);
+    res.status(500).json({ error: 'Veriler alınamadı' });
   }
 });
 
-// API: Son İşlemleri Getir (Dashboard için)
+// API: İşlemleri Getir (Dashboard için 1000 satır)
 app.get('/api/transactions', checkAuth, async (req, res) => {
     try {
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
-            range: 'Transactions!A2:E',
+            range: 'Transactions!A2:E1000',
         });
         
         const rows = response.data.values || [];
-        // Satır numarasını da ekliyoruz ki silebilelim (A1=1, A2=2 vb. yani index+2)
         const transactions = rows.map((row, index) => ({
             rowId: index + 2,
             date: row[0] || '',
             description: row[1] || '',
             category: row[2] || '',
             type: row[3] || '',
-            amount: parseFloat((row[4] || '0').replace(',', '.'))
-        })).reverse().slice(0, 50); // Sadece son 50 işlem
+            amount: parseFloat(String(row[4] || '0').replace(',', '.'))
+        })).reverse();
         
         res.json(transactions);
     } catch (error) {
@@ -109,21 +113,12 @@ app.get('/api/transactions', checkAuth, async (req, res) => {
 app.post('/api/transactions', checkAuth, async (req, res) => {
   try {
     const { date, amount, description, type, category } = req.body;
-
     if (!amount || !category) {
       return res.status(400).json({ error: 'Tutar ve Kategori zorunludur' });
     }
-
     const formattedDate = formatDate(date);
-    
-    // Ondalık için . yerine , koy: "15.50" -> "15,50"
     const amountStr = String(amount).replace('.', ',');
-
-    // Transactions sırası: Tarih | Açıklama | Kategori | Tür | Tutar
-    // Kullanıcının mevcut yapısı: Tarih, Açıklama, Kategori, Tür, Tutar
-    const values = [
-      [formattedDate, description || '', category, type, amountStr]
-    ];
+    const values = [[formattedDate, description || '', category, type, amountStr]];
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
@@ -131,7 +126,6 @@ app.post('/api/transactions', checkAuth, async (req, res) => {
       valueInputOption: 'USER_ENTERED',
       resource: { values },
     });
-
     res.json({ status: 'Success' });
   } catch (error) {
     console.error('İşlem eklenemedi:', error);
@@ -139,11 +133,10 @@ app.post('/api/transactions', checkAuth, async (req, res) => {
   }
 });
 
-// API: İşlem Sil (Sadece satır içeriğini temizler)
+// API: İşlem Sil
 app.delete('/api/transactions/:row', checkAuth, async (req, res) => {
     try {
         const rowId = req.params.row;
-        // Satırı tamamen silmek yerine içeriğini temizler (Diğer formülleri bozmamak için daha güvenli)
         await sheets.spreadsheets.values.clear({
             spreadsheetId: SPREADSHEET_ID,
             range: `Transactions!A${rowId}:E${rowId}`,
