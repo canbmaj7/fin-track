@@ -29,10 +29,11 @@
         }
     </script>
     <style>
-        input, select, textarea { font-size: 16px !important; }
+        * { box-sizing: border-box; }
+        input, select, textarea { font-size: 16px !important; width: 100%; max-width: 100%; margin: 0; }
         .tab-active { color: #BB86FC; border-top: 2px solid #BB86FC; }
         .tab-inactive { color: #888; border-top: 2px solid transparent; }
-        body { padding-bottom: 70px; /* Alttaki menu için */ }
+        body { padding-bottom: 70px; -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
 <body class="bg-darkbg text-gray-200 min-h-screen selection:bg-primary selection:text-black font-sans">
@@ -101,11 +102,11 @@
                         </div>
 
                         <!-- Tarih -->
-                        <div class="relative w-full h-[54px] bg-darkbg rounded-xl border border-gray-700 flex items-center px-4">
+                        <div class="relative w-full h-[56px] bg-darkbg rounded-xl border border-gray-700 flex items-center px-4 overflow-hidden">
                             <input type="date" id="date" 
-                                class="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer">
-                            <span id="dateDisplay" class="text-white">20 Mart 2026</span>
-                            <span class="ml-auto text-gray-500">📅</span>
+                                class="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer bg-transparent border-0 m-0 p-0 text-transparent outline-none appearance-none translate-x-[-1px]">
+                            <span id="dateDisplay" class="text-white pointer-events-none z-10">...</span>
+                            <span class="ml-auto text-gray-400 pointer-events-none z-10">📅</span>
                         </div>
 
                         <button type="submit" id="submitBtn" class="w-full bg-primary hover:bg-opacity-90 text-black font-bold text-lg py-4 rounded-xl shadow-lg active:scale-95 transition-all mt-2">Kaydet</button>
