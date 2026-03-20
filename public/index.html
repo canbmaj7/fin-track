@@ -33,24 +33,6 @@
         .tab-active { color: #BB86FC; border-top: 2px solid #BB86FC; }
         .tab-inactive { color: #888; border-top: 2px solid transparent; }
         body { padding-bottom: 70px; /* Alttaki menu için */ }
-        input[type="date"] {
-            position: relative;
-            min-height: 54px;
-            display: block;
-        }
-        /* iOS picker icon fix */
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            background: transparent;
-            bottom: 0;
-            color: transparent;
-            cursor: pointer;
-            height: auto;
-            left: 0;
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: auto;
-        }
     </style>
 </head>
 <body class="bg-darkbg text-gray-200 min-h-screen selection:bg-primary selection:text-black font-sans">
@@ -119,8 +101,11 @@
                         </div>
 
                         <!-- Tarih -->
-                        <div>
-                            <input type="date" id="date" class="w-full bg-darkbg text-white px-4 py-3 rounded-xl border border-gray-700 outline-none">
+                        <div class="relative w-full h-[54px] bg-darkbg rounded-xl border border-gray-700 flex items-center px-4">
+                            <input type="date" id="date" 
+                                class="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer">
+                            <span id="dateDisplay" class="text-white">20 Mart 2026</span>
+                            <span class="ml-auto text-gray-500">📅</span>
                         </div>
 
                         <button type="submit" id="submitBtn" class="w-full bg-primary hover:bg-opacity-90 text-black font-bold text-lg py-4 rounded-xl shadow-lg active:scale-95 transition-all mt-2">Kaydet</button>
@@ -263,10 +248,25 @@
         }
 
         function initApp() {
-            document.getElementById('date').valueAsDate = new Date();
+            const now = new Date();
+            const dateInput = document.getElementById('date');
+            dateInput.valueAsDate = now;
+            updateDateDisplay(dateInput.value); // Initial display
             loadCategoriesAndActions();
             loadDashboard();
         }
+
+        // Tarih gösterimini güncelle
+        function updateDateDisplay(val) {
+            if(!val) return;
+            const [y, m, d] = val.split('-');
+            const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            document.getElementById('dateDisplay').textContent = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+        }
+
+        document.getElementById('date').addEventListener('change', (e) => {
+            updateDateDisplay(e.target.value);
+        });
 
         function switchTab(tabId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
@@ -333,7 +333,9 @@
             document.getElementById('amount').value = amount;
             document.getElementById('description').value = desc;
             document.getElementById('category').value = cat;
-            document.getElementById('date').valueAsDate = new Date();
+            const d = new Date();
+            document.getElementById('date').valueAsDate = d;
+            updateDateDisplay(document.getElementById('date').value);
         }
 
         document.getElementById('budgetForm').addEventListener('submit', async (e) => {
