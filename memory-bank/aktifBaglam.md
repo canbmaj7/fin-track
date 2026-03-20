@@ -1,14 +1,14 @@
 # Aktif Bağlam
 
 ## Mevcut Odak
-Projenin temel kurulumu, API entegrasyonu ve dinamik kategori özelliği tamamlandı. Şu an proje dokümantasyonu (Bellek Bankası) oluşturuluyor.
+Faz 2 yeni özellik paketi (Login, Dashboard, Geçmiş, PWA) tamamlandı. Kullanıcıya kodların güncellendiği bildirilecek.
 
 ## Son Değişiklikler
-- **Backend**: `server.js` üzerinden Google Sheets API bağlantısı ve yetkilendirme (Service Account) sağlandı.
-- **API**: `/api/categories` endpoint'i A (Gider) ve B (Gelir) sütunlarını ayrıştırarak döndürecek şekilde güncellendi.
-- **Frontend**: `index.html`'de Tür seçimine (Gelir/Gider) göre kategori listesinin dinamik değişmesi sağlandı.
-- **Doğrulama**: `test_connection.js` ve `test_sheets.js` ile bağlantı ve veri akışı doğrulandı.
+- **Güvenlik**: `.env` dosyası için `APP_PASSWORD` eklendi ve `server.js` korumaya alındı, frontend `x-app-password` gönderecek.
+- **Frontend Yenilendi**: `index.html` alt sekmelerle (Ekle, Geçmiş, Özet) tamamen yeniden yazıldı.
+- **PWA**: `manifest.json` ve `sw.js` eklendi, iOS Safari PWA desteği doğrulandı.
+- **Veri Sildirme**: `/api/transactions/:row` oluşturuldu; hücre formatını bozmamak adına row'u tamamen 'delete' etmek yerine `clear` fonksiyonu kullanıldı.
 
 ## Sonraki Adımlar
-- Proje dokümantasyonunu tamamlamak.
-- Kullanıcıdan gelen ek özellik taleplerini beklemek (örneğin: geçmiş işlemleri listeleme, dashboard özeti vb.).
+- Kullanıcının `git push` ile kodu GitHub'a taşıyıp Coolify'ın AutoDeploy ile güncel versiyonu canlıya alması.
+- Uygulamanın iOS'a kurulup test edilmesi.
