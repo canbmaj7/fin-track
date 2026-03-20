@@ -99,7 +99,7 @@ app.get('/api/transactions', checkAuth, async (req, res) => {
             description: row[1] || '',
             category: row[2] || '',
             type: row[3] || '',
-            amount: parseFloat(String(row[4] || '0').replace(',', '.'))
+            amount: parseFloat(String(row[4] || '0').replace(/\./g, '').replace(',', '.'))
         })).reverse();
         
         res.json(transactions);

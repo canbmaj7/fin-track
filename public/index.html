@@ -33,6 +33,24 @@
         .tab-active { color: #BB86FC; border-top: 2px solid #BB86FC; }
         .tab-inactive { color: #888; border-top: 2px solid transparent; }
         body { padding-bottom: 70px; /* Alttaki menu için */ }
+        input[type="date"] {
+            position: relative;
+            min-height: 54px;
+            display: block;
+        }
+        /* iOS picker icon fix */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            bottom: 0;
+            color: transparent;
+            cursor: pointer;
+            height: auto;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: auto;
+        }
     </style>
 </head>
 <body class="bg-darkbg text-gray-200 min-h-screen selection:bg-primary selection:text-black font-sans">
