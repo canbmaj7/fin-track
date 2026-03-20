@@ -1,14 +1,13 @@
 # Aktif Bağlam
 
 ## Mevcut Odak
-Faz 2 yeni özellik paketi (Login, Dashboard, Geçmiş, PWA) tamamlandı. Kullanıcıya kodların güncellendiği bildirilecek.
+Faz 2 iyileştirmeleri tamamlandı. Dashboard hesaplama hatası giderildi ve hızlı butonlar dinamik hale getirildi.
 
 ## Son Değişiklikler
-- **Güvenlik**: `.env` dosyası için `APP_PASSWORD` eklendi ve `server.js` korumaya alındı, frontend `x-app-password` gönderecek.
-- **Frontend Yenilendi**: `index.html` alt sekmelerle (Ekle, Geçmiş, Özet) tamamen yeniden yazıldı.
-- **PWA**: `manifest.json` ve `sw.js` eklendi, iOS Safari PWA desteği doğrulandı.
-- **Veri Sildirme**: `/api/transactions/:row` oluşturuldu; hücre formatını bozmamak adına row'u tamamen 'delete' etmek yerine `clear` fonksiyonu kullanıldı.
+- **Dashboard**: "Bu Ayki Özet" artık sadece içinde bulunulan ayın ve yılın verilerini toplayacak şekilde düzeltildi (Frontend logic).
+- **Hızlı Butonlar**: `Settings!D2:H` arasından okunacak şekilde dinamik yapıldı. Kullanıcı bu hücreleri Google Sheets üzerinden düzenleyebilir.
+- **Backend**: `server.js` üzerinden `/api/categories` endpoint'i artık Quick Actions verilerini de dönüyor. `/api/transactions` daha fazla (1000) satır çekiyor.
 
 ## Sonraki Adımlar
-- Kullanıcının `git push` ile kodu GitHub'a taşıyıp Coolify'ın AutoDeploy ile güncel versiyonu canlıya alması.
-- Uygulamanın iOS'a kurulup test edilmesi.
+- Kullanıcının Google Sheets'te Hızlı Buton ayarlarını yapması.
+- Sunucunun yeniden deploy edilmesi.

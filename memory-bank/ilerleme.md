@@ -12,12 +12,13 @@
 - [x] Şifreli Giriş (Login) Ekranı Ekle (.env APP_PASSWORD)
 - [x] Dashboard (Harcama Özeti ve Grafikler) Ekle
 - [x] Geçmiş İşlemler (Son 50 işlemi görüntüleme ve silme)
-- [x] Hızlı Butonlar (Quick Actions - e.g. Kahve, Otobüs)
+- [x] Dinamik Hızlı Butonlar (Google Sheets üzerinden düzenlenebilir)
 - [x] PWA (Progressive Web App - Ana ekrana ekleme) Desteği Ekle
 - [x] Miktar girişinde Virgül/Nokta ondalık toleransı
+- [x] Aylık Özet hesaplamasındaki tarih hatası düzeltildi (Sadece içinde bulunulan ay toplanıyor)
 
 ## Yapılacaklar (Gelecek Planları)
-- [ ] Gelişmiş veri filtreleme (Ay bazlı, yıl bazlı)
+- [ ] Gelişmiş veri filtreleme (Ay bazlı seçim, yıl bazlı)
 - [ ] Birden fazla dil desteği (i18n)
 
 ## Bilinen Sorunlar
